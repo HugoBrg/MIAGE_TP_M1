@@ -13,7 +13,7 @@ public class GenericToString {
 			String str = cl.getFields()[i].toString();
 			System.out.println("Field avant : "+str);
 			String[] arrOfStr = str.split(" "); 
-			arrOfStr = arrOfStr[arrOfStr.length-1].split(".");
+			arrOfStr = arrOfStr[arrOfStr.length-1].split(".",arrOfStr[arrOfStr.length-1].length());
 	        for (String a : arrOfStr) 
 	            System.out.println(a); 
 			str = arrOfStr[arrOfStr.length-1];
