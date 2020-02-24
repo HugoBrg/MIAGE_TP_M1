@@ -2,7 +2,7 @@
 #include "DallasTemperature.h"
 
 const int luminosite = 13;
-const int temperature = 35;
+const int temperature = 23;
 const int vert = 22;
 const int rouge = 23;
 
