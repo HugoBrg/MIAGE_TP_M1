@@ -14,8 +14,12 @@ void connect_wifi(){
  // Access Point of the infrastructure
  //const char* ssid = "HUAWEI-553A";
  //const char *password = "QTM06RTT";
- const char* ssid = "HugoBRG";
- const char *password= "hugo1234"; 
+ //const char* ssid = "HugoBRG";
+ //const char *password= "hugo1234"; 
+ const char* ssid = "OUI JE DIS LA WIFI ! - THIERRY";
+ const char *password= "ThierryLeGenie"; 
+ //const char* ssid = "PedoPhone";
+ //const char *password= "12345678"; 
  
  Serial.println("\nConnecting Wifi to ");
  Serial.println(ssid);

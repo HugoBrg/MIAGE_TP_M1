@@ -9,7 +9,7 @@
 #include "DallasTemperature.h"
 
 /* ---- CONST---- */
-const int lumiPIN = 13;
+const int lumiPIN = 39;
 const int tempPIN = 23;
 const int redPIN = 19;
 const int greenPIN = 21;
@@ -61,10 +61,12 @@ void setup() {
   Serial.begin(9600);
   while (!Serial); // wait for a serial connection. Needed for native USB port only
 
+  
   int luminosite1 = analogRead(lumiPIN);  
   Serial.print("Luminosite | setup1() : "); // for debug
   Serial.print(luminosite1);
   Serial.print(" Lux\n");
+  
   
   // Initialize the output variables as outputs
   pinMode(redPIN, OUTPUT);
@@ -84,11 +86,11 @@ void setup() {
   server.begin(); // Lancement du serveur
 
 
-
   int luminosite2 = analogRead(lumiPIN);  
   Serial.print("Luminosite | setup2() : "); // for debug
   Serial.print(luminosite2);
   Serial.print(" Lux\n");
+  
 }
 
 /*--------------------------------*/
@@ -110,12 +112,12 @@ void make_html_response_page(WiFiClient client, String mac, String temperature, 
     //client.println("<link rel=\"icon\" href=\"data:,\">");
     // CSS
     String background="white";
-    Serial.print("chauffage : "+chauffage+"++++++");
+    Serial.print("chauffage : "+chauffage);
     if(chauffage=="jour"){
-      background="yellow";
+      background="#fff59d";
     }
     else if(chauffage=="nuit"){
-      background="black";
+      background="#757575";
     }
     client.println("<head><style>body{font-family: Helvetica; margin: 0px auto; text-align: center; background-color:"+background+";}");
     client.println("div{display: inline-block;}");
@@ -130,6 +132,7 @@ void make_html_response_page(WiFiClient client, String mac, String temperature, 
     client.println("<p>Objet Ref : " + mac + "</p>");
     client.println("<p>Temperature : "+ temperature +" C</p>");
     client.println("<p>Luminosite : "+ luminosite +" Lux</p>");
+    client.println("<p>Etat : "+ chauffage +"</p>");
             
     // Display current state, and ON/OFF buttons for LED
     client.println("<p>Statut de la LED rouge : <font color=" + redCouleur +">" + redState + "</font></p>");
@@ -137,12 +140,18 @@ void make_html_response_page(WiFiClient client, String mac, String temperature, 
     
     
     // Ctrl buttons
+    client.println("<section>");
     client.println("<div><a href=\"/redLedOn\"><button class=\"buttong\">Chauffage ON</button></a></div>");
     client.println("<div><a href=\"/redLedOff\"><button class=\"buttong buttonr\">Chauffage OFF</button></a></div>");
     
     client.println("<div><a href=\"/greenLedOn\"><button class=\"buttong\">Clim ON</button></a></div>");
     client.println("<div><a href=\"/greenLedOff\"><button class=\"buttong buttonr\">Clim OFF</button></a></div>");
-    
+    client.println("</section>");
+
+    client.println("<section>");
+    client.println("<label for='chauffage'>Chauffage : </label><label for='climatisation'>Climatisation : </label><form action=\"/testPost\" method=\"post\"><select id=\"chauffage\"><option value=\"on\">On</option><option value=\"off\">Off</option></select><select id=\"climatisation\"><option value=\"on\">On</option><option value=\"off\">Off</option></select> <div><input type=\"submit\" value=\"Subscribe!\"></div></form>");
+    client.println("</section>");
+        
     client.println("</body></html>");
             
     // The HTTP response ends with another blank line
@@ -150,7 +159,7 @@ void make_html_response_page(WiFiClient client, String mac, String temperature, 
 }
 
 /*--------------------------------*/
-void post_test(){
+/*void post_test(){
     HTTPClient http;
      
     http.begin("192.168.43.141"); //Specify destination for HTTP request
@@ -173,7 +182,7 @@ void post_test(){
    }
  
    http.end();  //Free resources
-}
+}*/
 
 /*--------------------------------*/
 String chauffage(float temperature, int luminosite){
@@ -181,7 +190,7 @@ String chauffage(float temperature, int luminosite){
     //float temp = temperature.toFloat();
     //int lumi = luminosite.toInt();
     
-    if(temperature < 25 && luminosite < 1800){
+    if(temperature < 24 && luminosite < 1700){
       //NUIT
       Serial.print("NUIT");
       Serial.print("\n");
@@ -189,7 +198,7 @@ String chauffage(float temperature, int luminosite){
       digitalWrite(redPIN, LOW);
       return "nuit";
   }
-  else if (temperature > 25 && luminosite > 1800){
+  else if (temperature > 24 && luminosite > 1700){
       //JOUR
       Serial.print("JOUR");
       Serial.print("\n");
@@ -228,11 +237,17 @@ void request_analysis(String header){
         greenCouleur = "red";           
         digitalWrite(greenPIN, LOW);
     }
+    else if (header.indexOf("POST /testPost") >= 0) {// turns the GPIOs off
+        Serial.println("POST Request");
+    }
 }
+
+
 
 /*--------------------------------*/
 void loop(){
   String header; // Entete de l'HTTP request
+  String body;
   WiFiClient client = server.available();   // Listen for incoming clients
 
   if (client) {                             // Nouvelle connexion,
@@ -243,7 +258,8 @@ void loop(){
       if (client.available()) {             // S'il y un client 
         char c = client.read();             // et qu'il y a un byte à lire,
         Serial.write(c);                    // l'afficher sur le port série .. juste pour le debug
-        header += c;                        // et le placer dans le buffer "header"  
+        header += c;                        // et le placer dans le buffer "header"
+        //body += c;  
         
         if (c == '\n') {                    // if the byte is a newline character
           if (currentLine.length() == 0) {
@@ -251,6 +267,7 @@ void loop(){
             // that's THE END OF the client HTTP request, so :
 
             // a) Analyse de la requete : cela peut avoir un impact sur l'état de l'objet !
+            //Serial.println(header);
             request_analysis(header);
             
             // b) Envoi de le reponse au client
@@ -258,6 +275,8 @@ void loop(){
             int luminositeI = getLuminosite();
             String temperatureS = String(temperatureF);
             String luminositeS = String(luminositeI);
+
+            //Serial.println(luminositeI);
   
             //String chauffage = chauffage(temperatureF, luminositeI);
             //String chauffage = chauffage(temperatureS, luminositeS);  
@@ -269,11 +288,15 @@ void loop(){
           } else { // if you got a newline, then clear currentLine
             currentLine = "";
           }
-        } else if (c != '\r') {  // if you got anything else but a carriage return character,
+        } else {  // if you got anything else but a carriage return character,
           currentLine += c;      // add it to the end of the currentLine
+          body +=c;
         }
       } 
     }
+    Serial.println("BODY"); 
+    Serial.println(body);
+    Serial.println("BODY"); 
     // Clear the header variable
     header = "";
 
